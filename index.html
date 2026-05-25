@@ -1,42 +1,285 @@
+# index.html
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MyBloxx Defense</title>
-
+<title>MyBloxx</title>
 <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
 <div id="menu">
-    <h1>MYBLOXX DEFENSE</h1>
-    <button id="playBtn">PLAY</button>
+    <h1>MYBLOXX</h1>
+
+    <div class="games">
+        <button onclick="openGame('bedwars')">3D Bed Wars</button>
+        <button>Mega Survival</button>
+        <button>Zombie Attack</button>
+        <button>Parkour Run</button>
+        <button>Tower Defense</button>
+    </div>
 </div>
 
-<div id="ui">
-    ❤️ Base HP: <span id="baseHp">100</span>
-    <br>
-    💰 Money: <span id="money">200</span>
-</div>
+<div id="crosshair">+</div>
 
-<div id="towerButton">
-    PLACE TOWER ($50)
-</div>
-
-<div id="game">
-
-    <!-- PATH -->
-    <div class="path horizontal" style="top:300px; left:0px; width:500px;"></div>
-    <div class="path vertical" style="top:300px; left:450px; height:250px;"></div>
-    <div class="path horizontal" style="top:500px; left:450px; width:600px;"></div>
-
-    <!-- BASE -->
-    <div id="base"></div>
-
-</div>
-
-<script src="script.js"></script>
+<script type="module" src="script.js"></script>
 </body>
 </html>
+```
+
+---
+
+# style.css
+
+```css
+body{
+    margin:0;
+    overflow:hidden;
+    font-family:Arial;
+    background:black;
+}
+
+#menu{
+    position:absolute;
+    width:100%;
+    height:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    background:#1e1e1e;
+    color:white;
+    z-index:10;
+}
+
+h1{
+    font-size:70px;
+    margin-bottom:30px;
+}
+
+.games{
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+}
+
+button{
+    padding:20px 40px;
+    font-size:25px;
+    border:none;
+    border-radius:12px;
+    background:limegreen;
+    color:white;
+    cursor:pointer;
+}
+
+button:hover{
+    background:green;
+}
+
+#crosshair{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    color:white;
+    font-size:30px;
+    display:none;
+    pointer-events:none;
+}
+
+canvas{
+    display:block;
+}
+```
+
+---
+
+# script.js
+
+```javascript
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js';
+
+const menu = document.getElementById("menu");
+const crosshair = document.getElementById("crosshair");
+
+window.openGame = function(name){
+
+    if(name === 'bedwars'){
+        startBedwars();
+    }
+}
+
+function startBedwars(){
+
+    menu.style.display = 'none';
+    crosshair.style.display = 'block';
+
+    // SCENE
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87ceeb);
+
+    // CAMERA
+    const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth/window.innerHeight,
+        0.1,
+        1000
+    );
+
+    // RENDERER
+    const renderer = new THREE.WebGLRenderer({antialias:true});
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // LIGHT
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(10,20,10);
+    scene.add(light);
+
+    const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambient);
+
+    // GROUND
+    const groundGeo = new THREE.BoxGeometry(100,1,100);
+    const groundMat = new THREE.MeshLambertMaterial({color:0x3cb043});
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.position.y = -1;
+    scene.add(ground);
+
+    // PLAYER ISLAND
+    const islandGeo = new THREE.BoxGeometry(10,2,10);
+    const islandMat = new THREE.MeshLambertMaterial({color:0x888888});
+    const island = new THREE.Mesh(islandGeo, islandMat);
+    island.position.set(0,0,0);
+    scene.add(island);
+
+    // BED
+    const bedGeo = new THREE.BoxGeometry(3,1,2);
+    const bedMat = new THREE.MeshLambertMaterial({color:0xff0000});
+    const bed = new THREE.Mesh(bedGeo, bedMat);
+    bed.position.set(0,1.5,0);
+    scene.add(bed);
+
+    // ENEMY ISLAND
+    const enemyIsland = new THREE.Mesh(islandGeo, islandMat);
+    enemyIsland.position.set(25,0,0);
+    scene.add(enemyIsland);
+
+    // ENEMY BED
+    const enemyBedMat = new THREE.MeshLambertMaterial({color:0x0000ff});
+    const enemyBed = new THREE.Mesh(bedGeo, enemyBedMat);
+    enemyBed.position.set(25,1.5,0);
+    scene.add(enemyBed);
+
+    // BLOCKS ARRAY
+    let blocks = [];
+
+    // PLAYER
+    camera.position.set(0,4,8);
+
+    let velocityY = 0;
+    let onGround = true;
+
+    const keys = {};
+
+    document.addEventListener('keydown', e=>{
+        keys[e.key.toLowerCase()] = true;
+    });
+
+    document.addEventListener('keyup', e=>{
+        keys[e.key.toLowerCase()] = false;
+    });
+
+    // PLACE BLOCK
+    document.addEventListener('click', ()=>{
+
+        const blockGeo = new THREE.BoxGeometry(2,2,2);
+        const blockMat = new THREE.MeshLambertMaterial({color:0xd2b48c});
+        const block = new THREE.Mesh(blockGeo, blockMat);
+
+        block.position.set(
+            Math.round(camera.position.x/2)*2,
+            0,
+            Math.round((camera.position.z-6)/2)*2
+        );
+
+        scene.add(block);
+        blocks.push(block);
+    });
+
+    function animate(){
+
+        requestAnimationFrame(animate);
+
+        // MOVEMENT
+        const speed = 0.15;
+
+        if(keys['w']) camera.position.z -= speed;
+        if(keys['s']) camera.position.z += speed;
+        if(keys['a']) camera.position.x -= speed;
+        if(keys['d']) camera.position.x += speed;
+
+        // JUMP
+        if(keys[' '] && onGround){
+            velocityY = 0.25;
+            onGround = false;
+        }
+
+        velocityY -= 0.01;
+        camera.position.y += velocityY;
+
+        if(camera.position.y <= 4){
+            camera.position.y = 4;
+            velocityY = 0;
+            onGround = true;
+        }
+
+        // CAMERA LOOK
+        camera.lookAt(
+            camera.position.x,
+            camera.position.y,
+            camera.position.z - 10
+        );
+
+        renderer.render(scene,camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', ()=>{
+
+        camera.aspect = window.innerWidth/window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+}
+```
+
+---
+
+# HOW TO RUN
+
+1. Make a folder.
+2. Create:
+
+   * index.html
+   * style.css
+   * script.js
+3. Paste the code.
+4. Open index.html.
+5. Click "3D Bed Wars".
+
+---
+
+# CONTROLS
+
+* W A S D = Move
+* SPACE = Jump
+* CLICK = Place blocks
+
+This is REAL 3D using Three.js.
