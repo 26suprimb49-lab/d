@@ -1,119 +1,66 @@
-body{
-    margin:0;
-    overflow:hidden;
-    background:#1e1e1e;
-    font-family:Arial;
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js';
+
+const menu = document.getElementById("menu");
+const crosshair = document.getElementById("crosshair");
+
+window.openGame = function(name){
+
+    if(name === 'bedwars'){
+        startBedwars();
+    }
 }
 
-#menu{
-    position:absolute;
-    width:100%;
-    height:100%;
-    background:#1e1e1e;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    flex-direction:column;
-    color:white;
-    z-index:100;
-}
+function startBedwars(){
 
-h1{
-    font-size:60px;
-}
+    menu.style.display = 'none';
+    crosshair.style.display = 'block';
 
-button{
-    padding:20px 40px;
-    font-size:25px;
-    border:none;
-    border-radius:12px;
-    background:limegreen;
-    color:white;
-    cursor:pointer;
-}
+    // SCENE
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87ceeb);
 
-button:hover{
-    background:green;
-}
+    // CAMERA
+    const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth/window.innerHeight,
+        0.1,
+        1000
+    );
 
-#game{
-    width:100vw;
-    height:100vh;
-    position:relative;
-    background:#6bc56b;
-    display:none;
-}
+    // RENDERER
+    const renderer = new THREE.WebGLRenderer({antialias:true});
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-.path{
-    position:absolute;
-    background:#b98b55;
-}
+    // LIGHT
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(10,20,10);
+    scene.add(light);
 
-.horizontal{
-    height:100px;
-}
+    const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambient);
 
-.vertical{
-    width:100px;
-}
+    // GROUND
+    const groundGeo = new THREE.BoxGeometry(100,1,100);
+    const groundMat = new THREE.MeshLambertMaterial({color:0x3cb043});
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.position.y = -1;
+    scene.add(ground);
 
-#base{
-    width:120px;
-    height:120px;
-    background:gray;
-    position:absolute;
-    right:40px;
-    top:440px;
-    border:6px solid black;
-}
+    // PLAYER ISLAND
+    const islandGeo = new THREE.BoxGeometry(10,2,10);
+    const islandMat = new THREE.MeshLambertMaterial({color:0x888888});
+    const island = new THREE.Mesh(islandGeo, islandMat);
+    island.position.set(0,0,0);
+    scene.add(island);
 
-.enemy{
-    width:50px;
-    height:50px;
-    background:red;
-    border-radius:50%;
-    position:absolute;
-}
+    // BED
+    const bedGeo = new THREE.BoxGeometry(3,1,2);
+    const bedMat = new THREE.MeshLambertMaterial({color:0xff0000});
+    const bed = new THREE.Mesh(bedGeo, bedMat);
+    bed.position.set(0,1.5,0);
+    scene.add(bed);
 
-.tower{
-    width:50px;
-    height:50px;
-    background:blue;
-    position:absolute;
-    border-radius:10px;
-}
-
-.bullet{
-    width:12px;
-    height:12px;
-    background:yellow;
-    border-radius:50%;
-    position:absolute;
-}
-
-#ui{
-    position:absolute;
-    top:10px;
-    left:10px;
-    color:white;
-    background:#222;
-    padding:12px;
-    border-radius:10px;
-    font-size:22px;
-    z-index:20;
-    display:none;
-}
-
-#towerButton{
-    position:absolute;
-    bottom:10px;
-    left:10px;
-    background:dodgerblue;
-    color:white;
-    padding:15px;
-    border-radius:10px;
-    cursor:pointer;
-    font-size:22px;
-    display:none;
-    z-index:20;
+    // ENEMY ISLAND
+    const enemyIsland = new THREE.Mesh(islandGeo, islandMat);
 }
